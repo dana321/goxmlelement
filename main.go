@@ -9,7 +9,6 @@ import (
 	"strconv"
 )
 
-
 func check(err error) {
     if err != nil {
    	 fmt.Printf("failed with '%s'\n", err)
@@ -23,11 +22,48 @@ type Element struct {
 	Attr map[string]string
 	Parent *Element
 	Children []*Element
+	Var map[string]interface{}
 }
+func (e *Element) GetAttr(Name string) (string) {
+	if val, ok := e.Attr[Name]; ok {
+		return val
+	}
 
+	return ""
+}
+func (e *Element) GetVar(Name string) (interface{}) {
+	ele:=e
+	
+	for ele != nil {
+		if val, ok := ele.Var[Name]; ok {
+			return val
+		}
+		ele=ele.Parent
+	}
+	return nil
+}
+func (e *Element) SetVar(Name string,Value interface{}){
+	e.SetVarScope(Name,Value,0)
+}
+func (e *Element) SetVarScope(Name string,Value interface{},scope int){
+	if scope==0{
+		e.Var[Name]=Value
+	}else{
+		ele:=e
+		
+		for i := 0; i < -scope; i++ {
+			if ele.Parent != nil{
+				ele=ele.Parent
+			}
+		}
+		ele.Var[Name]=Value
+	}
+}
 func (e *Element) AddChild(Name string,Value string,Attr map[string]string) *Element{
 	var mpt []*Element
-	n := Element{Name,Value,Attr,e,mpt}
+	mptvar :=make(map[string]interface{})
+
+	n := Element{Name:Name,Value:Value,Attr:Attr,Parent:e,Children:mpt,Var:mptvar}
 	e.Children=append(e.Children,&n)
 	return &n
 }
@@ -52,20 +88,20 @@ func (e *Element) GetPath() string{
 	
 	return str
 }
-func (e *Element) GetChildrenByTagName(tagName string) []*Element{
+func (e *Element) GetChildrenByTagName(TagName string) []*Element{
 	var ret []*Element
 	 
-	tagName=strings.ToLower(tagName)
+	TagName=strings.ToLower(TagName)
 	 
 	for _,el := range e.Children{
-		if strings.ToLower(el.Name) == tagName{
+		if strings.ToLower(el.Name) == TagName{
 			ret=append(ret,el)
 		}
 	}
 	return ret
 }
 func (e *Element) WalkDump(){
-	fmt.Println(e.GetPath(),"=",e.Value,"==",e.Attr)
+	fmt.Println(e.GetPath(),"=",e.Value,"==",e.Attr,";Vars=",e.Var)
 	
 	if len(e.Children)>0{
 		for _,x := range e.Children {
@@ -120,7 +156,8 @@ func (er *ElementReader) LoadStream(source io.Reader){
 				if len(er.cv)==0 {
 					var mpt []*Element
 					var mp *Element
-					newRoot := Element{v.Name.Local,"",Attributes,mp,mpt}
+					mptvar :=make(map[string]interface{})
+					newRoot := Element{Name:v.Name.Local,Value:"",Attr:Attributes,Parent:mp,Children:mpt,Var:mptvar}
 					er.Root=&newRoot
 					er.cv=append(er.cv,er.Root)
 				} else {
