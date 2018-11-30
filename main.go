@@ -72,13 +72,15 @@ func (e *Element) GetPath() string{
 	ele:=e
 	
 	for ele != nil {
-		iter:=1
+		iter:=0
 		
 		if ele.Parent != nil{
-			for k,v := range ele.Parent.Children {
-				if v==e {
-					iter=k+1
-					break
+			for _,v := range ele.Parent.Children {
+				if v.Name==ele.Name {
+					iter++
+					if ele==v{
+						break
+					}
 				}
 			}
 		}
@@ -150,21 +152,30 @@ func (er *ElementReader) LoadStream(source io.Reader){
 
 				Attributes:= make(map[string]string)
 				for _, Attr := range v.Attr {
-					Attributes[Attr.Name.Local]=Attr.Value
+					AttrName:=Attr.Name.Local
+					if Attr.Name.Space!=""{
+						AttrName=Attr.Name.Space+":"+AttrName
+					}
+					Attributes[AttrName]=Attr.Value
 				}
+				TName:=v.Name.Local
 
+				if v.Name.Space!=""{
+					TName=v.Name.Space+":"+TName
+				}
+				
 				if len(er.cv)==0 {
 					var mpt []*Element
 					var mp *Element
 					mptvar :=make(map[string]interface{})
-					newRoot := Element{Name:v.Name.Local,Value:"",Attr:Attributes,Parent:mp,Children:mpt,Var:mptvar}
+					
+					newRoot := Element{Name:TName,Value:"",Attr:Attributes,Parent:mp,Children:mpt,Var:mptvar}
 					er.Root=&newRoot
 					er.cv=append(er.cv,er.Root)
 				} else {
-					el :=er.cv[len(er.cv)-1].AddChild(v.Name.Local,"",Attributes)
+					el :=er.cv[len(er.cv)-1].AddChild(TName,"",Attributes)
 					er.cv=append(er.cv,el)
 				}
-
 			case xml.EndElement:
 				if len(er.cv) > 0 {
 					er.cv = er.cv[:len(er.cv)-1]
