@@ -9,6 +9,14 @@ import (
 	"strconv"
 )
 
+var GetVarReplFunc func(*Element,string)string
+
+func init(){
+	GetVarReplFunc=func(e *Element,s string)string{
+		return s
+	}
+}
+
 func check(err error) {
     if err != nil {
    	 fmt.Printf("failed with '%s'\n", err)
@@ -24,13 +32,32 @@ type Element struct {
 	Children []*Element
 	Var map[string]interface{}
 }
+func (e *Element) HasAttrs() bool{
+	return len(e.Attr)!=0
+}
+func (e *Element) HasChildren() bool{
+	return len(e.Children)!=0
+}
+func (e *Element) SetAttr(Name string,Value string){
+	e.Attr[Name]=Value
+}
 func (e *Element) GetAttr(Name string) (string) {
 	if val, ok := e.Attr[Name]; ok {
-		return val
+		return GetVarReplFunc(e,val)
 	}
-
 	return ""
 }
+func (e *Element) GetAttrInt(Name string) (int) {
+	strval:=GetVarReplFunc(e,e.GetAttr(Name))
+	
+	i, err := strconv.Atoi(strval)
+    
+    if err != nil {
+    	i=0
+    }
+    return i
+}
+
 func (e *Element) GetVar(Name string) (interface{}) {
 	ele:=e
 	
@@ -43,7 +70,7 @@ func (e *Element) GetVar(Name string) (interface{}) {
 	return nil
 }
 func (e *Element) SetVar(Name string,Value interface{}){
-	e.SetVarScope(Name,Value,0)
+	e.SetVarScope(Name,Value,-1)
 }
 func (e *Element) SetVarScope(Name string,Value interface{},scope int){
 	if scope==0{
@@ -83,12 +110,27 @@ func (e *Element) GetPath() string{
 					}
 				}
 			}
+		}else{
+			iter++
 		}
 		str="/"+ele.Name+"["+strconv.Itoa(iter)+"]"+str
 		ele=ele.Parent
 	}
 	
 	return str
+}
+func (e *Element) GetChildByTagName(TagName string) *Element{
+	mpt:=new(Element)
+	mpt.Name="#empty"
+	 
+	TagName=strings.ToLower(TagName)
+	 
+	for _,el := range e.Children{
+		if strings.ToLower(el.Name) == TagName{
+			return el
+		}
+	}
+	return mpt
 }
 func (e *Element) GetChildrenByTagName(TagName string) []*Element{
 	var ret []*Element
@@ -181,7 +223,16 @@ func (er *ElementReader) LoadStream(source io.Reader){
 					er.cv = er.cv[:len(er.cv)-1]
 				}
 			case xml.CharData:
-				cda:=strings.TrimSpace(string(v))
+				cda:=string(v)
+				cda=strings.TrimFunc(cda, func(r rune) bool {
+					retval:=false
+					
+					if r==rune('\n') || r==rune('\t') ||  r==rune('\r'){
+						retval=true
+					}
+					return retval
+				})
+				
 				if cda!="" {
 					Attributes:= make(map[string]string)
 					er.cv[len(er.cv)-1].AddChild("#text",cda,Attributes)
