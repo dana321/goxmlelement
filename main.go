@@ -145,7 +145,25 @@ func (e *Element) GetChildrenByTagName(TagName string) []*Element{
 	return ret
 }
 func (e *Element) WalkDump(){
-	fmt.Println(e.GetPath(),"=",e.Value,"==",e.Attr,";Vars=",e.Var)
+	fmt.Println(e.GetPath()+"="+e.Value)
+	if len(e.Attr)>0{
+		for k,v:=range e.Attr{
+			if len(v)>30{
+				v=v[:30]+"...(truncated)"
+			}
+			fmt.Println("@"+k+"="+v)
+		}
+	}
+	if len(e.Var)>0{
+		for k,val:=range e.Var{
+			v:=fmt.Sprintf("%v", val)
+			
+			if len(v)>30{
+				v=v[:30]+"...(truncated)"
+			}
+			fmt.Println("$"+k+"="+v)
+		}
+	}
 	
 	if len(e.Children)>0{
 		for _,x := range e.Children {
