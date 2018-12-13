@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"strconv"
+	"bytes"
 )
 
 var GetVarReplFunc func(*Element,string)string
@@ -19,7 +20,7 @@ func init(){
 
 func check(err error) {
     if err != nil {
-   	 fmt.Printf("failed with '%s'\n", err)
+		fmt.Printf("failed with '%s'\n", err)
         panic(err)
     }
 }
@@ -31,6 +32,20 @@ type Element struct {
 	Parent *Element
 	Children []*Element
 	Var map[string]interface{}
+}
+func (e *Element) Copy() (*Element){
+	return e.CopyWithParent(e.Parent)
+}
+func (e Element) CopyWithParent(parent *Element) *Element{
+	newChildren:=make([]*Element,0)
+	e.Parent=parent
+	
+	for _,el:= range e.Children{
+		newChildren=append(newChildren,el.CopyWithParent(&e))
+	}
+	e.Children=newChildren
+	
+	return &e
 }
 func (e *Element) HasAttrs() bool{
 	return len(e.Attr)!=0
@@ -57,6 +72,16 @@ func (e *Element) GetAttrInt(Name string) (int) {
     }
     return i
 }
+func (e *Element) GetAttrs() string{
+	strout:=""
+	for k,_:=range e.Attr{
+		v:=e.GetAttr(k)
+		v=strings.Replace(v,"\"","&quot;",-1)
+		v=strings.Replace(v,"&","&amp;",-1)
+		strout+=" "+k+"=\""+v+"\" "
+	}
+	return strout
+}
 
 func (e *Element) GetVar(Name string) (interface{}) {
 	ele:=e
@@ -69,12 +94,23 @@ func (e *Element) GetVar(Name string) (interface{}) {
 	}
 	return nil
 }
+func (e *Element) SetVarCurrParent(Name string,Value interface{}){
+	e.SetVarScope(Name,Value,0)
+	e.SetVarScope(Name,Value,-1)
+}
 func (e *Element) SetVar(Name string,Value interface{}){
 	e.SetVarScope(Name,Value,-1)
 }
 func (e *Element) SetVarScope(Name string,Value interface{},scope int){
 	if scope==0{
-		e.Var[Name]=Value
+		if Value==nil{
+			_, ok := e.Var[Name];
+			if ok {
+				delete(e.Var,Name);
+			}
+		}else{
+			e.Var[Name]=Value
+		}
 	}else{
 		ele:=e
 		
@@ -83,7 +119,29 @@ func (e *Element) SetVarScope(Name string,Value interface{},scope int){
 				ele=ele.Parent
 			}
 		}
-		ele.Var[Name]=Value
+		if Value==nil{
+			_, ok := ele.Var[Name];
+			if ok {
+				delete(ele.Var,Name);
+			}
+		}else{
+			ele.Var[Name]=Value
+		}
+	}
+}
+func (e *Element) SetVarRoot(Name string,Value interface{}){
+	el:=e
+	
+	for el.Parent!=nil{
+		el=el.Parent
+	}
+	if Value==nil{
+		_, ok := el.Var[Name];
+		if ok {
+			delete(el.Var,Name);
+		}
+	}else{
+		el.Var[Name]=Value
 	}
 }
 func (e *Element) AddChild(Name string,Value string,Attr map[string]string) *Element{
@@ -180,32 +238,48 @@ func (e *Element) Walk(each func(*Element)bool){
 		}
 	}	
 }
+func (e *Element) InnerValue(procfunc func(*Element)bool) interface{}{
+	var retval interface{}
+	e.SetVarScope("out",bytes.NewBufferString(""),0)
+
+	for _,el :=range e.Children{
+		el.Walk(procfunc)
+	}
+	retval=e.GetVar("out").(*bytes.Buffer).String()
+	e.SetVarScope("out",nil,0)
+	
+	return retval
+}
 type ElementReader struct {
 	Root *Element
 	cv []*Element
 }
-func (er *ElementReader) LoadFile(fileName string){
+func (er *ElementReader) LoadFile(fileName string,parente *Element){
 	file, err := os.Open(fileName)
 	check(err)
 	defer file.Close()
-	er.LoadStream(file)
+	er.LoadStream(file,parente)
 }
 
-func (er *ElementReader) LoadString(data string){
+func (er *ElementReader) LoadString(data string,parente *Element) error{
 	datareader:=strings.NewReader(data)
-	er.LoadStream(datareader)
+	return er.LoadStream(datareader,parente)
 }
-func (er *ElementReader) LoadStream(source io.Reader){
+func (er *ElementReader) LoadStream(source io.Reader,parente *Element) error{
 	decoder := xml.NewDecoder(source)
+	decoder.Strict = false
+	decoder.AutoClose = xml.HTMLAutoClose
 	
+	//decoder.Entity = xml.HTMLEntity
 	for {
 		t, err := decoder.Token()
 		if err == io.EOF {
 			// end of file
-			
 			break
+		}else if err!=nil{
+			return err
 		}
-		check(err)
+		
 
 		switch v := t.(type) {
 			case xml.StartElement:
@@ -227,6 +301,11 @@ func (er *ElementReader) LoadStream(source io.Reader){
 				if len(er.cv)==0 {
 					var mpt []*Element
 					var mp *Element
+					
+					if parente != nil{
+						mp=parente
+					}
+					
 					mptvar :=make(map[string]interface{})
 					
 					newRoot := Element{Name:TName,Value:"",Attr:Attributes,Parent:mp,Children:mpt,Var:mptvar}
@@ -268,4 +347,5 @@ func (er *ElementReader) LoadStream(source io.Reader){
 				//fmt.Printf("Directive: %s\n", string(v))
 		}
 	}
+	return nil
 }
