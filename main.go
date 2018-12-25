@@ -254,6 +254,7 @@ func (e *Element) InnerValue(procfunc func(*Element)bool) interface{}{
 type ElementReader struct {
 	Root *Element
 	cv []*Element
+	DecodeHTMLEntities bool
 }
 func (er *ElementReader) LoadFile(fileName string,parente *Element){
 	file, err := os.Open(fileName)
@@ -271,7 +272,10 @@ func (er *ElementReader) LoadStream(source io.Reader,parente *Element) error{
 	decoder.Strict = false
 	decoder.AutoClose = xml.HTMLAutoClose
 	
-	//decoder.Entity = xml.HTMLEntity
+	if er.DecodeHTMLEntities==true{
+		decoder.Entity = xml.HTMLEntity
+	}
+	
 	for {
 		t, err := decoder.Token()
 		if err == io.EOF {
