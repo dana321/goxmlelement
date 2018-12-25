@@ -8,6 +8,7 @@ import (
 	"strings"
 	"strconv"
 	"bytes"
+	"net/url"
 )
 
 var GetVarReplFunc func(*Element,string)string
