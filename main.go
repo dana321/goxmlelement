@@ -288,9 +288,7 @@ func (er *ElementReader) LoadStream(source io.Reader,parente *Element) error{
 				for _, Attr := range v.Attr {
 					AttrName:=Attr.Name.Local
 					
-					
-					
-					if Attr.Name.Space!=""){
+					if Attr.Name.Space!=""{
 						_,errurl:=url.ParseRequestURI(Attr.Name.Space)
 						if errurl!=nil{
 							AttrName=Attr.Name.Space+":"+AttrName
