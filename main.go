@@ -300,7 +300,11 @@ func (er *ElementReader) LoadStream(source io.Reader,parente *Element) error{
 				TName:=v.Name.Local
 
 				if v.Name.Space!=""{
-					TName=v.Name.Space+":"+TName
+					_,errurl:=url.ParseRequestURI(v.Name.Space)
+					
+					if errurl!=nil{
+						TName=v.Name.Space+":"+TName
+					}
 				}
 				
 				if len(er.cv)==0 {
