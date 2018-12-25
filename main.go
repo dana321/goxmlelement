@@ -287,8 +287,14 @@ func (er *ElementReader) LoadStream(source io.Reader,parente *Element) error{
 				Attributes:= make(map[string]string)
 				for _, Attr := range v.Attr {
 					AttrName:=Attr.Name.Local
-					if Attr.Name.Space!=""{
-						AttrName=Attr.Name.Space+":"+AttrName
+					
+					
+					
+					if Attr.Name.Space!=""){
+						_,errurl:=url.ParseRequestURI(Attr.Name.Space)
+						if errurl!=nil{
+							AttrName=Attr.Name.Space+":"+AttrName
+						}
 					}
 					Attributes[AttrName]=Attr.Value
 				}
@@ -337,11 +343,6 @@ func (er *ElementReader) LoadStream(source io.Reader,parente *Element) error{
 			case xml.Comment:
 				er.cv[len(er.cv)-1].AddChild("#comment",string(v),make(map[string]string))
 
-			case xml.ProcInst:
-				if strings.ToLower(string(v.Target))!="xml" && len(er.cv) != 0 {
-					// handle XML processing instruction like <?target inst?>
-					er.cv[len(er.cv)-1].AddChild("#"+string(v.Target),string(v.Inst),make(map[string]string))
-				}
 			case xml.Directive:
 				// unhandled for now
 				//fmt.Printf("Directive: %s\n", string(v))
