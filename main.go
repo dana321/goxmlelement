@@ -130,6 +130,18 @@ func (e *Element) SetVarScope(Name string,Value interface{},scope int){
 		}
 	}
 }
+func (e *Element) SetVarAutoScope(Name string,Value interface{}) {
+	ele:=e
+	
+	for ele != nil {
+		if val, ok := ele.Var[Name]; ok {
+			ele.SetVarScope(Name,Value,0)
+		}
+		ele=ele.Parent
+	}
+}
+
+
 func (e *Element) SetVarRoot(Name string,Value interface{}){
 	el:=e
 	
