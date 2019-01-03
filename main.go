@@ -134,7 +134,7 @@ func (e *Element) SetVarAutoScope(Name string,Value interface{}) {
 	ele:=e
 	
 	for ele != nil {
-		if val, ok := ele.Var[Name]; ok {
+		if _, ok := ele.Var[Name]; ok {
 			ele.SetVarScope(Name,Value,0)
 		}
 		ele=ele.Parent
