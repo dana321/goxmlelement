@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"bytes"
 	"net/url"
+	"reflect"
 )
 
 var GetVarReplFunc func(*Element,string)string
@@ -95,6 +96,20 @@ func (e *Element) GetVar(Name string) (interface{}) {
 	}
 	return nil
 }
+func (e *Element) GetVarInt(Name string) (int) {
+	ele:=e
+	
+	for ele != nil {
+		if val, ok := ele.Var[Name]; ok {
+			if reflect.TypeOf(val).String()=="int"{
+				return val.(int)
+			}
+		}
+		ele=ele.Parent
+	}
+	return 0
+}
+
 func (e *Element) SetVarCurrParent(Name string,Value interface{}){
 	e.SetVarScope(Name,Value,0)
 	e.SetVarScope(Name,Value,-1)
