@@ -278,6 +278,18 @@ func (e *Element) InnerValue(procfunc func(*Element)bool) interface{}{
 	
 	return retval
 }
+func (e *Element) ElementValue(procfunc func(*Element)bool) interface{}{
+	var retval interface{}
+	e.SetVarScope("out",bytes.NewBufferString(""),0)
+
+	e.Walk(procfunc)
+	
+	retval=e.GetVar("out").(*bytes.Buffer).String()
+	e.SetVarScope("out",nil,0)
+	
+	return retval
+}
+
 type ElementReader struct {
 	Root *Element
 	cv []*Element
