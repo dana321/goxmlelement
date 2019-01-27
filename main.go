@@ -79,7 +79,7 @@ func (e *Element) GetAttrs() string{
 	strout:=""
 	keys:=e.GetAttrKeys()
 	sort.Strings(keys)
-	for ,k:=range keys{
+	for _,k:=range keys{
 		v:=e.Attr[k]
 		v=strings.Replace(v,"\"","&quot;",-1)
 		v=strings.Replace(v,"&","&amp;",-1)
