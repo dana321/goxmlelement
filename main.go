@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"net/url"
 	"reflect"
+	"sort"
 )
 
 var GetVarReplFunc func(*Element,string)string
@@ -76,14 +77,30 @@ func (e *Element) GetAttrInt(Name string) (int) {
 }
 func (e *Element) GetAttrs() string{
 	strout:=""
-	for k,_:=range e.Attr{
+	keys:=e.GetAttrKeys()
+	sort.Strings(keys)
+	for k,_:=range keys{
 		v:=e.GetAttr(k)
 		v=strings.Replace(v,"\"","&quot;",-1)
 		v=strings.Replace(v,"&","&amp;",-1)
 		strout+=" "+k+"=\""+v+"\" "
 	}
+	if len(strout)>1{
+		strout=strout[:len(strout)-1]
+	}
 	return strout
 }
+func (e *Element) GetAttrKeys() []string{
+	keys:= make([]string, len(e.Attr))
+	i := 0
+	
+	for key, _ := range e.Attr {
+		keys[i] = key
+		i++
+	}
+	return keys
+}
+
 
 func (e *Element) GetVar(Name string) (interface{}) {
 	ele:=e
