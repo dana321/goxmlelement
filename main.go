@@ -300,8 +300,15 @@ func (e *Element) ElementValue(procfunc func(*Element)bool) interface{}{
 	e.SetVarScope("out",bytes.NewBufferString(""),0)
 
 	e.Walk(procfunc)
+	ev:=e.GetVar("out")
 	
-	retval=e.GetVar("out").(*bytes.Buffer).String()
+	evt:=reflect.TypeOf(ev).String()
+	
+	if evt=="*bytes.Buffer"{
+		retval=ev.(*bytes.Buffer).String()
+	}else{
+		retval=""
+	}
 	e.SetVarScope("out",nil,0)
 	
 	return retval
