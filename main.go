@@ -75,6 +75,21 @@ func (e *Element) GetAttrInt(Name string) (int) {
     }
     return i
 }
+func (e *Element) GetAttrsReplaceVars() string{
+	strout:=""
+	keys:=e.GetAttrKeys()
+	sort.Strings(keys)
+	for _,k:=range keys{
+		v:=e.GetAttr(k)
+		v=strings.Replace(v,"&","&amp;",-1)
+		v=strings.Replace(v,"\"","&quot;",-1)
+		strout+=" "+k+"=\""+v+"\" "
+	}
+	if len(strout)>1{
+		strout=strout[:len(strout)-1]
+	}
+	return strout
+}
 func (e *Element) GetAttrs() string{
 	strout:=""
 	keys:=e.GetAttrKeys()
